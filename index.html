@@ -83,11 +83,14 @@
                     type: 'tree',
                     data: [rootNode],
                     layout: 'vertical',  // 垂直布局
-                    symbolSize: 50,
+                    symbol: 'roundRect',
+                    symbolSize: 100,
                     roam: true,
                     label: {
                         show: true,
-                        fontSize: 14
+                        fontSize: 14,
+                        width: 100,  // 设置标签宽度
+                        overflow: 'break'  // 设置文本溢出处理方式为换行
                     },
                     edgeSymbol: ['circle', 'arrow'],
                     edgeSymbolSize: [4, 10],
@@ -100,10 +103,10 @@
                         curveness: 0.5
                     },
                     tree: {
-                        initialTreeDepth: 3,  // 控制树的深度
-                        nodeSpacing: 30,      // 节点间距
+                        nodeSpacing: 70,      // 节点间距
                         orient: 'vertical'    // 垂直排列
-                    }
+                    },
+                    initialTreeDepth: -1
                 }
             ]
         };
@@ -128,7 +131,8 @@
                 const newUserNode = {
                     id: nodeIdCounter++,  // 为节点生成唯一 ID
                     name: userInput,
-                    children: []
+                    children: [],
+                    symbolSize:Math.max(100, 30 + userInput.length * 5)
                 };
                 lastNode.children.push(newUserNode); // 将新节点添加到最后一个节点的子节点中
                 lastNode = newUserNode;  // 更新最后一个节点为新添加的用户节点
@@ -147,7 +151,8 @@
                 const newAIResponseNode = {
                     id: nodeIdCounter++,  // 为节点生成唯一 ID
                     name: aiResponse,
-                    children: []
+                    children: [],
+                    symbolSize:Math.max(100, 30 + aiResponse.length * 5)
                 };
                 lastNode.children.push(newAIResponseNode);  // 将 AI 回复节点添加到最后一个节点的子节点中
                 lastNode = newAIResponseNode;  // 更新最后一个节点为新添加的 AI 回复节点
