@@ -132,7 +132,7 @@
                     id: nodeIdCounter++,  // 为节点生成唯一 ID
                     name: userInput,
                     children: [],
-                    symbolSize:Math.max(100, 30 + userInput.length * 5)
+                    symbolSize:Math.max(100, 30 + userInput.length * 1.7)
                 };
                 lastNode.children.push(newUserNode); // 将新节点添加到最后一个节点的子节点中
                 lastNode = newUserNode;  // 更新最后一个节点为新添加的用户节点
@@ -152,7 +152,7 @@
                     id: nodeIdCounter++,  // 为节点生成唯一 ID
                     name: aiResponse,
                     children: [],
-                    symbolSize:Math.max(100, 30 + aiResponse.length * 5)
+                    symbolSize:Math.max(100, 30 + aiResponse.length * 1.7)
                 };
                 lastNode.children.push(newAIResponseNode);  // 将 AI 回复节点添加到最后一个节点的子节点中
                 lastNode = newAIResponseNode;  // 更新最后一个节点为新添加的 AI 回复节点
