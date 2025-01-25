@@ -74,6 +74,7 @@
   text-align: left;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   border: 2px solid transparent; /* 边框颜色透明 */
+  transition: transform 0.3s ease-out; /* 为 transform 属性添加过渡 */
 }
 
 /* 用户节点样式 */
