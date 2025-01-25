@@ -76,7 +76,20 @@
   border: 2px solid transparent; /* 边框颜色透明 */
   transition: transform 0.3s ease-out; /* 为 transform 属性添加过渡 */
 }
+.node-handle {
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border: 2px solid #78b8f3;
+}
 
+.node-handle.source {
+  bottom: -1px;
+}
+
+.node-handle.target {
+  top: -1px;
+}
 /* 用户节点样式 */
 .user-node {
   background: #6366f1;
@@ -91,4 +104,45 @@
 .error-node {
   background: #ef4444;
   border-color: #ff4d4f;
+}
+.custom-node {
+  border-radius: 8px;
+  padding: 10px;
+  color: white;
+  min-width: 120px;
+  max-width: 280px;
+  text-align: left;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 2px solid transparent; /* 边框颜色透明 */
+  transition: transform 0.3s ease-out; /* 为 transform 属性添加过渡 */
+}
+
+.edit-button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: #666;
+  color: white;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-button:hover {
+  background: #444;
+}
+
+.selected-node {
+  box-shadow: 0 0 0 2px #78b8f3;
+}
+
+.node-content {
+  white-space: pre-wrap;
+  word-break: break-word;
 }

@@ -1,8 +1,9 @@
 import dagre from 'dagre';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import ReactFlow, {
   Background,
   Controls,
+  Handle,
   MiniMap,
   ReactFlowProvider,
   useEdgesState,
@@ -12,29 +13,66 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import './App.css';
 
+// 自定义节点组件
+const CustomNode = ({ id, data, selected, onEdit }) => {
+  const handleEditClick = (e) => {
+    e.stopPropagation();
+    const newLabel = prompt('编辑节点内容', data.label);
+    if (newLabel) {
+      onEdit(id, newLabel);
+    }
+  };
+
+  return (
+    <div className={`custom-node ${data.className} ${selected ? 'selected-node' : ''}`}>
+      <Handle
+        type="target"
+        position="top"
+        className="node-handle"
+        isConnectable={false}
+      />
+      <div className="node-content">{data.label}</div>
+      <button className="edit-button" onClick={handleEditClick}>
+        ✎
+      </button>
+      <Handle
+        type="source"
+        position="bottom"
+        className="node-handle"
+        isConnectable={false}
+      />
+    </div>
+  );
+};
+
 // 初始节点和边
 const initialNodes = [
   {
     id: '1',
-    data: { label: '你: 你好，能介绍一下AI吗？' },
-    className: 'user-node',
+    type: 'custom',
+    data: { 
+      label: '你: 你好，能介绍一下AI吗？',
+      className: 'user-node'
+    },
     position: { x: 0, y: 0 },
   },
   {
     id: '2',
-    data: { label: 'AI: 当然！人工智能是...' },
-    className: 'ai-node',
+    type: 'custom',
+    data: { 
+      label: 'AI: 当然！人工智能是...',
+      className: 'ai-node'
+    },
     position: { x: 0, y: 100 },
   },
 ];
 
-const initialEdges = [{ id: 'e1-2', source: '1', target: '2' }];
+const initialEdges = [{ id: 'e1-2', source: '1', target: '2', sourceHandle: 'bottom', targetHandle: 'top' }];
 
-// 创建布局算法函数
+// 布局算法
 const applyLayout = (nodes, edges) => {
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
-
   dagreGraph.setGraph({ rankdir: 'TB', nodesep: 50, ranksep: 100 });
 
   nodes.forEach(node => {
@@ -47,33 +85,46 @@ const applyLayout = (nodes, edges) => {
 
   dagre.layout(dagreGraph);
 
-  return nodes.map(node => {
-    const nodeWithPosition = dagreGraph.node(node.id);
-    return {
-      ...node,
-      position: {
-        x: nodeWithPosition.x - 100,
-        y: nodeWithPosition.y,
-      },
-      targetPosition: 'top',
-      sourcePosition: 'bottom',
-    };
-  });
+  return nodes.map(node => ({
+    ...node,
+    position: {
+      x: dagreGraph.node(node.id).x - 100,
+      y: dagreGraph.node(node.id).y,
+    },
+    targetPosition: 'top',
+    sourcePosition: 'bottom',
+  }));
 };
 
 const DialogFlow = () => {
-  const [nodes, setNodes] = useNodesState(applyLayout(initialNodes, initialEdges));
-  const [edges, setEdges] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState(applyLayout(initialNodes, initialEdges));
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedParentId, setSelectedParentId] = useState(null);
-  const { setCenter } = useReactFlow(); // 获取视图控制方法
-  // 节点点击高亮逻辑
+  const { setCenter } = useReactFlow();
+
+  // 节点编辑处理
+  const handleNodeEdit = useCallback((nodeId, newLabel) => {
+    setNodes(prevNodes => {
+      const updatedNodes = prevNodes.map(node => 
+        node.id === nodeId ? { ...node, data: { ...node.data, label: newLabel } } : node
+      );
+      return applyLayout(updatedNodes, edges);
+    });
+  }, [edges, setNodes]);
+
+  // 节点类型定义
+  const nodeTypes = useMemo(() => ({
+    custom: (props) => <CustomNode {...props} onEdit={handleNodeEdit} />
+  }), [handleNodeEdit]);
+
+  // 节点点击处理
   const handleNodeClick = useCallback((_, node) => {
     setSelectedParentId(prev => (prev === node.id ? null : node.id));
   }, []);
 
-  // 提交逻辑
+  // 提交处理
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim() || loading) return;
@@ -86,13 +137,19 @@ const DialogFlow = () => {
       ...nodes,
       {
         id: `u-${newId}`,
-        data: { label: `你: ${input}` },
-        className: 'user-node',
+        type: 'custom',
+        data: { 
+          label: `你: ${input}`,
+          className: 'user-node'
+        },
       },
       {
         id: `ai-${newId}`,
-        data: { label: 'AI: 思考中...' },
-        className: 'ai-node',
+        type: 'custom',
+        data: { 
+          label: 'AI: 思考中...',
+          className: 'ai-node'
+        },
       },
     ];
 
@@ -107,6 +164,7 @@ const DialogFlow = () => {
     setEdges(newEdges);
     setInput('');
     setSelectedParentId(null);
+
     // 查找最新添加的AI节点
     const aiNode = updatedNodes.find(n => n.id === `ai-${newId}`);
     if (aiNode) {
@@ -127,20 +185,7 @@ const DialogFlow = () => {
           n.id === `ai-${newId}`
             ? {
                 ...n,
-                data: { label: `AI: 这是对【${input}】的回复` },
-                className: 'ai-node',
-              }
-            : n
-        )
-      );
-    } catch {
-      setNodes(nodes =>
-        nodes.map(n =>
-          n.id === `ai-${newId}`
-            ? {
-                ...n,
-                data: { label: 'AI: 请求失败，请重试' },
-                className: 'error-node',
+                data: { ...n.data, label: `AI: 这是对【${input}】的回复` },
               }
             : n
         )
@@ -150,18 +195,16 @@ const DialogFlow = () => {
     }
   };
 
-  // 根据选中节点动态更新节点样式
-  const styledNodes = nodes.map(node => ({
-    ...node,
-    className: `${node.className} ${node.id === selectedParentId ? 'selected-node' : ''}`,
-  }));
-
   return (
     <div className="dialog-container">
       <ReactFlow
-        nodes={styledNodes}
+        nodes={nodes}
         edges={edges}
+        nodeTypes={nodeTypes}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
         onNodeClick={handleNodeClick}
+        nodesDraggable={false}
         connectable={false}
         fitView
         proOptions={{ hideAttribution: true }}
