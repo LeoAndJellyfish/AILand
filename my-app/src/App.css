@@ -1,10 +1,10 @@
-/* 对话流容器 */
+/* 对话流容器样式 */
 .dialog-container {
   width: 100vw;
   height: 100vh;
 }
 
-/* 输入栏样式 */
+/* 固定在底部的输入栏样式 */
 .input-container {
   position: fixed;
   bottom: 20px;
@@ -17,6 +17,7 @@
   z-index: 10;
 }
 
+/* 对话输入框样式 */
 .dialog-input {
   flex: 1;
   padding: 12px 16px;
@@ -25,14 +26,17 @@
   outline: none;
   font-size: 16px;
   background-color: white;
+  color: black;
 }
 
+/* 禁用状态下对话输入框样式 */
 .dialog-input:disabled {
   border-color: #94a3b8;
   background-color: #f1f5f9;
   cursor: not-allowed;
 }
 
+/* 对话按钮样式 */
 .dialog-button {
   padding: 12px 24px;
   background: #6366f1;
@@ -44,13 +48,20 @@
   transition: background 0.3s;
 }
 
+/* 鼠标悬停时对话按钮样式 */
 .dialog-button:hover {
   background: #4f46e5;
 }
 
+/* 禁用状态下对话按钮样式 */
 .dialog-button:disabled {
   background: #94a3b8;
   cursor: not-allowed;
+}
+
+/* 选中节点的高亮边框样式 */
+.selected-node {
+  border: 2px solid #007bff !important; /* 高亮边框颜色，使用 !important 来确保优先级 */
 }
 
 /* 节点基础样式 */
@@ -62,16 +73,21 @@
   max-width: 280px;
   text-align: left;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 2px solid transparent; /* 边框颜色透明 */
 }
 
+/* 用户节点样式 */
 .user-node {
   background: #6366f1;
 }
 
+/* AI节点样式 */
 .ai-node {
   background: #22c55e;
 }
 
+/* 错误节点样式 */
 .error-node {
   background: #ef4444;
+  border-color: #ff4d4f;
 }
