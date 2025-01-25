@@ -96,8 +96,8 @@ const DialogFlow = () => {
 
     const newEdges = [
       ...edges,
-      { id: `e-${parentId}-u`, source: parentId, target: `u-${newId}` },
-      { id: `e-u-ai`, source: `u-${newId}`, target: `ai-${newId}` },
+      { id: `e-${parentId}-u-${newId}`, source: parentId, target: `u-${newId}` },
+      { id: `e-u-ai-${newId}`, source: `u-${newId}`, target: `ai-${newId}` },
     ];
 
     const updatedNodes = applyLayout(newNodes, newEdges);
