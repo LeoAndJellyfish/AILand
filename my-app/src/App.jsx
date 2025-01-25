@@ -162,6 +162,7 @@ const DialogFlow = () => {
         nodes={styledNodes}
         edges={edges}
         onNodeClick={handleNodeClick}
+        connectable={false}
         fitView
         proOptions={{ hideAttribution: true }}
       >
