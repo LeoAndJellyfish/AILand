@@ -4,8 +4,10 @@ import ReactFlow, {
   Background,
   Controls,
   MiniMap,
+  ReactFlowProvider,
   useEdgesState,
-  useNodesState
+  useNodesState,
+  useReactFlow
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import './App.css';
@@ -65,7 +67,7 @@ const DialogFlow = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedParentId, setSelectedParentId] = useState(null);
-
+  const { setCenter } = useReactFlow(); // 获取视图控制方法
   // 节点点击高亮逻辑
   const handleNodeClick = useCallback((_, node) => {
     setSelectedParentId(prev => (prev === node.id ? null : node.id));
@@ -105,6 +107,18 @@ const DialogFlow = () => {
     setEdges(newEdges);
     setInput('');
     setSelectedParentId(null);
+    // 查找最新添加的AI节点
+    const aiNode = updatedNodes.find(n => n.id === `ai-${newId}`);
+    if (aiNode) {
+      // 计算节点中心坐标（考虑节点尺寸）
+      const nodeCenterX = aiNode.position.x + 100; // 节点宽度200/2
+      const nodeCenterY = aiNode.position.y + 25;  // 节点高度50/2
+      
+      // 平滑滚动到节点中心
+      setCenter(nodeCenterX, nodeCenterY, {
+        duration: 800,      // 动画持续时间
+      });
+    }
 
     try {
       await new Promise(resolve => setTimeout(resolve, 1500));
@@ -182,4 +196,13 @@ const DialogFlow = () => {
   );
 };
 
-export default DialogFlow;
+// 用 ReactFlowProvider 包裹整个应用
+const App = () => {
+  return (
+    <ReactFlowProvider>
+      <DialogFlow />
+    </ReactFlowProvider>
+  );
+};
+
+export default App;
