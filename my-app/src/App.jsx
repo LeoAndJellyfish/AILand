@@ -34,7 +34,7 @@ const initialEdges = [{ id: 'e1-2', source: '1', target: '2' }];
 const applyLayout = (nodes, edges, nodeSizeMap) => {
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
-  dagreGraph.setGraph({ rankdir: 'TB', nodesep: 200, ranksep: 100 });
+  dagreGraph.setGraph({ rankdir: 'TB', nodesep: 200, ranksep: 50 });
 
   nodes.forEach(node => {
     // 使用存储的尺寸或默认尺寸
