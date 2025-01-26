@@ -16,13 +16,13 @@ import './App.css';
 const initialNodes = [
   {
     id: '1',
-    data: { label: '你: 你好，能介绍一下AI吗？' },
+    data: { label: '你: 你好' },
     className: 'user-node',
     position: { x: 0, y: 0 },
   },
   {
     id: '2',
-    data: { label: 'AI: 当然！人工智能是...' },
+    data: { label: 'AI: 你好！请问我可以帮您什么？' },
     className: 'ai-node',
     position: { x: 0, y: 100 },
   },
@@ -35,10 +35,10 @@ const applyLayout = (nodes, edges) => {
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
 
-  dagreGraph.setGraph({ rankdir: 'TB', nodesep: 50, ranksep: 100 });
+  dagreGraph.setGraph({ rankdir: 'TB', nodesep: 50, ranksep: 50 });
 
   nodes.forEach(node => {
-    dagreGraph.setNode(node.id, { width: 200, height: 50 });
+    dagreGraph.setNode(node.id, { width: 200, height: 200 });
   });
 
   edges.forEach(edge => {
@@ -68,6 +68,24 @@ const DialogFlow = () => {
   const [loading, setLoading] = useState(false);
   const [selectedParentId, setSelectedParentId] = useState(null);
   const { setCenter } = useReactFlow(); // 获取视图控制方法
+  
+  // 提取从根节点到选中节点的对话历史
+  const extractDialogHistory = useCallback((parentId) => {
+    const history = [];
+    let currentId = parentId;
+    while (currentId) {
+      const node = nodes.find(n => n.id === currentId);
+      if (node) {
+        history.unshift(node.data.label);
+        const edge = edges.find(e => e.target === currentId);
+        currentId = edge ? edge.source : null;
+      } else {
+        currentId = null;
+      }
+    }
+    return history;
+  }, [nodes, edges]);
+
   // 节点点击高亮逻辑
   const handleNodeClick = useCallback((_, node) => {
     setSelectedParentId(prev => (prev === node.id ? null : node.id));
@@ -107,27 +125,51 @@ const DialogFlow = () => {
     setEdges(newEdges);
     setInput('');
     setSelectedParentId(null);
+
     // 查找最新添加的AI节点
     const aiNode = updatedNodes.find(n => n.id === `ai-${newId}`);
     if (aiNode) {
       // 计算节点中心坐标（考虑节点尺寸）
-      const nodeCenterX = aiNode.position.x + 100; // 节点宽度200/2
-      const nodeCenterY = aiNode.position.y + 25;  // 节点高度50/2
+      const nodeCenterX = aiNode.position.x + 75;
+      const nodeCenterY = aiNode.position.y + 50;
       
       // 平滑滚动到节点中心
       setCenter(nodeCenterX, nodeCenterY, {
         duration: 800,      // 动画持续时间
       });
     }
+  
+    const dialogHistory = extractDialogHistory(parentId);
+    const messages = dialogHistory.map(text => {
+      const [role, content] = text.split(': ', 2);
+      return { role: role === '你' ? 'user' : 'assistant', content };
+    });
+    messages.push({ role: 'user', content: input });
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const response = await fetch('https://api.lingyiwanwu.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer a0fbf48ae1a040c0bcca6cc88b328c53`,
+        },
+        body: JSON.stringify({
+          model: 'yi-lightning',
+          messages,
+          temperature: 0.3,
+          max_tokens: 100,
+        }),
+      });
+
+      const data = await response.json();
+      const reply = data.choices[0]?.message?.content || 'AI: 请求失败，请重试';
+
       setNodes(nodes =>
         nodes.map(n =>
           n.id === `ai-${newId}`
             ? {
                 ...n,
-                data: { label: `AI: 这是对【${input}】的回复` },
+                data: { label: `AI: ${reply}` },
                 className: 'ai-node',
               }
             : n
