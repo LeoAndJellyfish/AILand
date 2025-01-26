@@ -1,5 +1,5 @@
 import dagre from 'dagre';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -31,14 +31,15 @@ const initialNodes = [
 const initialEdges = [{ id: 'e1-2', source: '1', target: '2' }];
 
 // 创建布局算法函数
-const applyLayout = (nodes, edges) => {
+const applyLayout = (nodes, edges, nodeSizeMap) => {
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
-
-  dagreGraph.setGraph({ rankdir: 'TB', nodesep: 50, ranksep: 50 });
+  dagreGraph.setGraph({ rankdir: 'TB', nodesep: 200, ranksep: 100 });
 
   nodes.forEach(node => {
-    dagreGraph.setNode(node.id, { width: 200, height: 200 });
+    // 使用存储的尺寸或默认尺寸
+    const size = nodeSizeMap.current[node.id] || { width: 200, height: 80 };
+    dagreGraph.setNode(node.id, { width: size.width, height: size.height });
   });
 
   edges.forEach(edge => {
@@ -46,14 +47,14 @@ const applyLayout = (nodes, edges) => {
   });
 
   dagre.layout(dagreGraph);
-
+  
   return nodes.map(node => {
     const nodeWithPosition = dagreGraph.node(node.id);
     return {
       ...node,
       position: {
-        x: nodeWithPosition.x - 100,
-        y: nodeWithPosition.y,
+        x: nodeWithPosition.x - (nodeSizeMap.current[node.id]?.width || 200) / 2,
+        y: nodeWithPosition.y - (nodeSizeMap.current[node.id]?.height || 80) / 2,
       },
       targetPosition: 'top',
       sourcePosition: 'bottom',
@@ -62,13 +63,28 @@ const applyLayout = (nodes, edges) => {
 };
 
 const DialogFlow = () => {
-  const [nodes, setNodes] = useNodesState(applyLayout(initialNodes, initialEdges));
+  const nodeSizeMap = useRef({});  // 保存节点尺寸
+  const [nodes, setNodes] = useNodesState(applyLayout(initialNodes, initialEdges,nodeSizeMap));
   const [edges, setEdges] = useEdgesState(initialEdges);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedParentId, setSelectedParentId] = useState(null);
   const { setCenter } = useReactFlow(); // 获取视图控制方法
-  
+
+  const onNodesChange = useCallback((changes) => {
+    changes.forEach(change => {
+      if (change.type === 'position' || change.type === 'dimensions') {
+        const element = document.querySelector(`[data-id="${change.id}"]`);
+        if (element) {
+          const { offsetWidth: width, offsetHeight: height } = element;
+          nodeSizeMap.current[change.id] = { width, height };
+        }
+      }
+    });
+    //调试输出
+    //console.log(nodeSizeMap.current);
+  }, []);
+
   // 提取从根节点到选中节点的对话历史
   const extractDialogHistory = useCallback((parentId) => {
     const history = [];
@@ -120,7 +136,7 @@ const DialogFlow = () => {
       { id: `e-u-ai-${newId}`, source: `u-${newId}`, target: `ai-${newId}` },
     ];
 
-    const updatedNodes = applyLayout(newNodes, newEdges);
+    const updatedNodes = applyLayout(newNodes, newEdges, nodeSizeMap);
     setNodes(updatedNodes);
     setEdges(newEdges);
     setInput('');
@@ -164,17 +180,21 @@ const DialogFlow = () => {
       const data = await response.json();
       const reply = data.choices[0]?.message?.content || 'AI: 请求失败，请重试';
 
-      setNodes(nodes =>
-        nodes.map(n =>
-          n.id === `ai-${newId}`
-            ? {
-                ...n,
-                data: { label: `AI: ${reply}` },
-                className: 'ai-node',
-              }
-            : n
-        )
-      );
+      setNodes(prevNodes => {
+        // 过滤掉旧的 AI 节点
+        const filteredNodes = prevNodes.filter(n => n.id !== `ai-${newId}`);
+        
+        // 添加新的 AI 节点
+        const newNode = {
+          id: `ai-${newId}`,
+          data: { label: `AI: ${reply}` },
+          className: 'ai-node',
+          position: { x: 0, y: 0 }, // 位置将通过 applyLayout 更新
+        };
+      
+        // 返回更新后的节点数组
+        return applyLayout([...filteredNodes, newNode], newEdges, nodeSizeMap);
+      });
     } catch {
       setNodes(nodes =>
         nodes.map(n =>
@@ -204,6 +224,7 @@ const DialogFlow = () => {
         nodes={styledNodes}
         edges={edges}
         onNodeClick={handleNodeClick}
+        onNodesChange={onNodesChange}
         connectable={false}
         fitView
         proOptions={{ hideAttribution: true }}
