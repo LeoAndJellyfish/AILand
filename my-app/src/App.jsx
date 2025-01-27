@@ -28,6 +28,7 @@ const DialogFlow = () => {
   const { setCenter } = useReactFlow(); // 获取视图控制方法
   const [showSettings, setShowSettings] = useState(false);
   const [maxTokens, setMaxTokens] = useState(1024);
+  const [selectedModel, setSelectedModel] = useState('01AI'); // 新增状态用于选择模型
 
   const onNodesChange = useCallback((changes) => {
     changes.forEach(change => {
@@ -71,6 +72,10 @@ const DialogFlow = () => {
 
   const handleMaxTokensChange = (e) => {
     setMaxTokens(Number(e.target.value));
+  };
+
+  const handleModelChange = (e) => {
+    setSelectedModel(e.target.value);
   };
 
   // 提交逻辑
@@ -130,15 +135,28 @@ const DialogFlow = () => {
     });
     messages.push({ role: 'user', content: input });
 
+    // 根据选择的模型设置 API 配置
+    const apiConfig = selectedModel === '01AI'
+      ? {
+          url: 'https://api.lingyiwanwu.com/v1/chat/completions',
+          model: 'yi-lightning',
+          apiKey: 'a0fbf48ae1a040c0bcca6cc88b328c53',
+        }
+      : {
+          url: 'https://api.deepseek.com/chat/completions',
+          model: 'deepseek-chat',
+          apiKey: 'sk-a4ad50ad0771424db5ef16c46f941dbf',
+        };
+
     try {
-      const response = await fetch('https://api.lingyiwanwu.com/v1/chat/completions', {
+      const response = await fetch(apiConfig.url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer a0fbf48ae1a040c0bcca6cc88b328c53`,
+          Authorization: `Bearer ${apiConfig.apiKey}`,
         },
         body: JSON.stringify({
-          model: 'yi-lightning',
+          model: apiConfig.model,
           messages,
           temperature: 0.3,
           max_tokens: maxTokens,
@@ -217,6 +235,13 @@ const DialogFlow = () => {
               min="1"
               max="1000"
             />
+          </label>
+          <label>
+            使用模型:
+            <select value={selectedModel} onChange={handleModelChange}>
+              <option value="01AI">01AI</option>
+              <option value="deepseek">deepseek</option>
+            </select>
           </label>
         </div>
       )}
