@@ -30,6 +30,8 @@ const DialogFlow = () => {
   const [maxTokens, setMaxTokens] = useState(1024);
   const [selectedModel, setSelectedModel] = useState('01AI'); // 新增状态用于选择模型
   const [customApiKey, setCustomApiKey] = useState(''); // 新增状态用于自定义 API 密钥
+  const [customUrl, setCustomUrl] = useState(''); // 新增状态用于自定义 URL
+  const [customModelName, setCustomModelName] = useState(''); // 新增状态用于自定义模型名称
 
   const onNodesChange = useCallback((changes) => {
     changes.forEach(change => {
@@ -81,6 +83,14 @@ const DialogFlow = () => {
 
   const handleApiKeyChange = (e) => {
     setCustomApiKey(e.target.value);
+  };
+
+  const handleUrlChange = (e) => {
+    setCustomUrl(e.target.value);
+  };
+
+  const handleModelNameChange = (e) => {
+    setCustomModelName(e.target.value);
   };
 
   // 提交逻辑
@@ -145,12 +155,18 @@ const DialogFlow = () => {
       ? {
           url: 'https://api.lingyiwanwu.com/v1/chat/completions',
           model: 'yi-lightning',
-          apiKey: customApiKey || 'a0fbf48ae1a040c0bcca6cc88b328c53', // 使用自定义密钥或默认密钥
+          apiKey: 'a0fbf48ae1a040c0bcca6cc88b328c53',
         }
-      : {
+      : selectedModel === 'deepseek'
+      ? {
           url: 'https://api.deepseek.com/chat/completions',
           model: 'deepseek-chat',
-          apiKey: customApiKey || 'sk-a4ad50ad0771424db5ef16c46f941dbf', // 使用自定义密钥或默认密钥
+          apiKey: 'sk-a4ad50ad0771424db5ef16c46f941dbf',
+        }
+      : {
+          url: customUrl,
+          model: customModelName,
+          apiKey: customApiKey,
         };
 
     try {
@@ -246,17 +262,40 @@ const DialogFlow = () => {
             <select value={selectedModel} onChange={handleModelChange}>
               <option value="01AI">01AI</option>
               <option value="deepseek">deepseek</option>
+              <option value="custom">自定义</option>
             </select>
           </label>
-          <label>
-            API Key:
-            <input
-              type="text"
-              value={customApiKey}
-              onChange={handleApiKeyChange}
-              placeholder="输入自定义 API Key(若为空则使用默认密钥)"
-            />
-          </label>
+          {selectedModel === 'custom' && (
+            <>
+              <label>
+                API Key:
+                <input
+                  type="text"
+                  value={customApiKey}
+                  onChange={handleApiKeyChange}
+                  placeholder="输入自定义 API Key"
+                />
+              </label>
+              <label>
+                URL:
+                <input
+                  type="text"
+                  value={customUrl}
+                  onChange={handleUrlChange}
+                  placeholder="输入自定义 URL"
+                />
+              </label>
+              <label>
+                模型名称:
+                <input
+                  type="text"
+                  value={customModelName}
+                  onChange={handleModelNameChange}
+                  placeholder="输入自定义模型名称"
+                />
+              </label>
+            </>
+          )}
         </div>
       )}
       <div className="input-container">
