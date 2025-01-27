@@ -10,8 +10,13 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import './App.css';
+import ChatNode from './components/ChatNode';
 import { initialEdges, initialNodes } from './initialData';
 import { applyLayout } from './layoutUtils';
+
+const nodeTypes = {
+  chatNode: ChatNode,
+};
 
 const DialogFlow = () => {
   const nodeSizeMap = useRef({});  // 保存节点尺寸
@@ -81,11 +86,13 @@ const DialogFlow = () => {
       ...nodes,
       {
         id: `u-${newId}`,
+        type: 'chatNode',
         data: { label: `你: ${input}` },
         className: 'user-node',
       },
       {
         id: `ai-${newId}`,
+        type: 'chatNode',
         data: { label: 'AI: 思考中...' },
         className: 'ai-node',
       },
@@ -148,6 +155,7 @@ const DialogFlow = () => {
         // 添加新的 AI 节点
         const newNode = {
           id: `ai-${newId}`,
+          type: 'chatNode',
           data: { label: `AI: ${reply}` },
           className: 'ai-node',
           position: { x: 0, y: 0 }, // 位置将通过 applyLayout 更新
@@ -186,6 +194,7 @@ const DialogFlow = () => {
         edges={edges}
         onNodeClick={handleNodeClick}
         onNodesChange={onNodesChange}
+        nodeTypes={nodeTypes}
         connectable={false}
         fitView
         proOptions={{ hideAttribution: true }}

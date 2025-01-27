@@ -141,3 +141,54 @@
   border: 1px solid #ccc;
   border-radius: 3px;
 }
+
+/* 聊天节点样式 */
+.chat-node {
+  padding: 10px 15px;
+  border-radius: var(--border-radius);
+  min-width: 150px;
+  max-width: 300px;
+}
+
+.chat-node .chat-content {
+  color: white;
+  font-size: 14px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+/* 处理节点的连接点样式 */
+.chat-node .react-flow__handle {
+  width: 8px;
+  height: 8px;
+  background-color: white;
+  border: 2px solid #555;
+}
+
+.chat-node .react-flow__handle-top {
+  top: -4px;
+}
+
+.chat-node .react-flow__handle-bottom {
+  bottom: -4px;
+}
+
+/* 用户节点特定样式 */
+.chat-node.user-node {
+  background-color: var(--primary-color);
+}
+
+/* AI节点特定样式 */
+.chat-node.ai-node {
+  background-color: var(--secondary-color);
+}
+
+/* 错误节点特定样式 */
+.chat-node.error-node {
+  background-color: var(--error-color);
+}
+
+/* 选中状态样式 */
+.chat-node.selected-node {
+  box-shadow: 0 0 0 2px #007bff;
+}
