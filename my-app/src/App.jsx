@@ -48,20 +48,38 @@ const DialogFlow = () => {
     //console.log(nodeSizeMap.current);
   }, []);
 
-  // 提取从根节点到选中节点的对话历史
+  // 修改 extractDialogHistory 函数
   const extractDialogHistory = useCallback((parentId) => {
     const history = [];
-    let currentId = parentId;
-    while (currentId) {
-      const node = nodes.find(n => n.id === currentId);
-      if (node) {
-        history.unshift(node.data.label);
-        const edge = edges.find(e => e.target === currentId);
-        currentId = edge ? edge.source : null;
-      } else {
-        currentId = null;
+    const visited = new Set(); // 用于防止循环引用
+    
+    // 递归获取所有父节点的对话
+    const getAllPaths = (nodeId) => {
+      if (visited.has(nodeId)) return;
+      visited.add(nodeId);
+      
+      const node = nodes.find(n => n.id === nodeId);
+      if (!node) return;
+      
+      // 获取所有指向当前节点的边
+      const parentEdges = edges.filter(e => e.target === nodeId);
+      
+      // 如果没有父节点，将当前节点添加到历史记录
+      if (parentEdges.length === 0) {
+        history.push(node.data.label);
+        return;
       }
-    }
+      
+      // 对于每个父节点，递归获取其历史记录
+      parentEdges.forEach(edge => {
+        getAllPaths(edge.source);
+      });
+      
+      // 将当前节点添加到历史记录
+      history.push(node.data.label);
+    };
+    
+    getAllPaths(parentId);
     return history;
   }, [nodes, edges]);
 
