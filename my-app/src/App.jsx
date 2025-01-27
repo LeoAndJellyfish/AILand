@@ -29,6 +29,7 @@ const DialogFlow = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [maxTokens, setMaxTokens] = useState(1024);
   const [selectedModel, setSelectedModel] = useState('01AI'); // 新增状态用于选择模型
+  const [customApiKey, setCustomApiKey] = useState(''); // 新增状态用于自定义 API 密钥
 
   const onNodesChange = useCallback((changes) => {
     changes.forEach(change => {
@@ -76,6 +77,10 @@ const DialogFlow = () => {
 
   const handleModelChange = (e) => {
     setSelectedModel(e.target.value);
+  };
+
+  const handleApiKeyChange = (e) => {
+    setCustomApiKey(e.target.value);
   };
 
   // 提交逻辑
@@ -140,12 +145,12 @@ const DialogFlow = () => {
       ? {
           url: 'https://api.lingyiwanwu.com/v1/chat/completions',
           model: 'yi-lightning',
-          apiKey: 'a0fbf48ae1a040c0bcca6cc88b328c53',
+          apiKey: customApiKey || 'a0fbf48ae1a040c0bcca6cc88b328c53', // 使用自定义密钥或默认密钥
         }
       : {
           url: 'https://api.deepseek.com/chat/completions',
           model: 'deepseek-chat',
-          apiKey: 'sk-a4ad50ad0771424db5ef16c46f941dbf',
+          apiKey: customApiKey || 'sk-a4ad50ad0771424db5ef16c46f941dbf', // 使用自定义密钥或默认密钥
         };
 
     try {
@@ -242,6 +247,15 @@ const DialogFlow = () => {
               <option value="01AI">01AI</option>
               <option value="deepseek">deepseek</option>
             </select>
+          </label>
+          <label>
+            API Key:
+            <input
+              type="text"
+              value={customApiKey}
+              onChange={handleApiKeyChange}
+              placeholder="输入自定义 API Key(若为空则使用默认密钥)"
+            />
           </label>
         </div>
       )}
