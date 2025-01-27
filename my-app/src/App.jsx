@@ -70,6 +70,8 @@ const DialogFlow = () => {
   const [loading, setLoading] = useState(false);
   const [selectedParentId, setSelectedParentId] = useState(null);
   const { setCenter } = useReactFlow(); // 获取视图控制方法
+  const [showSettings, setShowSettings] = useState(false);
+  const [maxTokens, setMaxTokens] = useState(1024);
 
   const onNodesChange = useCallback((changes) => {
     changes.forEach(change => {
@@ -106,6 +108,14 @@ const DialogFlow = () => {
   const handleNodeClick = useCallback((_, node) => {
     setSelectedParentId(prev => (prev === node.id ? null : node.id));
   }, []);
+
+  const handleSettingsToggle = () => {
+    setShowSettings(prev => !prev);
+  };
+
+  const handleMaxTokensChange = (e) => {
+    setMaxTokens(Number(e.target.value));
+  };
 
   // 提交逻辑
   const handleSubmit = async (e) => {
@@ -173,7 +183,7 @@ const DialogFlow = () => {
           model: 'yi-lightning',
           messages,
           temperature: 0.3,
-          max_tokens: 100,
+          max_tokens: maxTokens,
         }),
       });
 
@@ -233,7 +243,23 @@ const DialogFlow = () => {
         <Controls />
         <MiniMap />
       </ReactFlow>
-
+      <button className="settings-button" onClick={handleSettingsToggle}>
+        设置
+      </button>
+      {showSettings && (
+        <div className="settings-panel">
+          <label>
+            Max Tokens:
+            <input
+              type="number"
+              value={maxTokens}
+              onChange={handleMaxTokensChange}
+              min="1"
+              max="1000"
+            />
+          </label>
+        </div>
+      )}
       <div className="input-container">
         <div className="selection-hint">
           {selectedParentId
