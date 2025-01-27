@@ -1,4 +1,3 @@
-import dagre from 'dagre';
 import React, { useCallback, useRef, useState } from 'react';
 import ReactFlow, {
   Background,
@@ -11,56 +10,8 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import './App.css';
-
-// 初始节点和边
-const initialNodes = [
-  {
-    id: '1',
-    data: { label: '你: 你好' },
-    className: 'user-node',
-    position: { x: 0, y: 0 },
-  },
-  {
-    id: '2',
-    data: { label: 'AI: 你好！请问我可以帮您什么？' },
-    className: 'ai-node',
-    position: { x: 0, y: 100 },
-  },
-];
-
-const initialEdges = [{ id: 'e1-2', source: '1', target: '2' }];
-
-// 创建布局算法函数
-const applyLayout = (nodes, edges, nodeSizeMap) => {
-  const dagreGraph = new dagre.graphlib.Graph();
-  dagreGraph.setDefaultEdgeLabel(() => ({}));
-  dagreGraph.setGraph({ rankdir: 'TB', nodesep: 200, ranksep: 50 });
-
-  nodes.forEach(node => {
-    // 使用存储的尺寸或默认尺寸
-    const size = nodeSizeMap.current[node.id] || { width: 200, height: 80 };
-    dagreGraph.setNode(node.id, { width: size.width, height: size.height });
-  });
-
-  edges.forEach(edge => {
-    dagreGraph.setEdge(edge.source, edge.target);
-  });
-
-  dagre.layout(dagreGraph);
-  
-  return nodes.map(node => {
-    const nodeWithPosition = dagreGraph.node(node.id);
-    return {
-      ...node,
-      position: {
-        x: nodeWithPosition.x - (nodeSizeMap.current[node.id]?.width || 200) / 2,
-        y: nodeWithPosition.y - (nodeSizeMap.current[node.id]?.height || 80) / 2,
-      },
-      targetPosition: 'top',
-      sourcePosition: 'bottom',
-    };
-  });
-};
+import { initialEdges, initialNodes } from './initialData';
+import { applyLayout } from './layoutUtils';
 
 const DialogFlow = () => {
   const nodeSizeMap = useRef({});  // 保存节点尺寸
