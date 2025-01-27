@@ -1,5 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import ReactFlow, {
+  addEdge,
   Background,
   Controls,
   MiniMap,
@@ -92,6 +93,30 @@ const DialogFlow = () => {
   const handleModelNameChange = (e) => {
     setCustomModelName(e.target.value);
   };
+
+  // 处理连接的函数
+  const onConnect = useCallback((params) => {
+    setEdges((eds) => {
+      const newEdges = addEdge(params, eds);
+      // 在连边后重新排版节点
+      setNodes((nds) => applyLayout(nds, newEdges, nodeSizeMap));
+      return newEdges;
+    });
+  }, [setEdges, setNodes]);
+
+  const onEdgeUpdate = useCallback((oldEdge, newConnection) => {
+    setEdges((eds) => addEdge(newConnection, eds.filter((e) => e.id !== oldEdge.id)));
+  }, [setEdges]);
+
+  const onEdgeUpdateEnd = useCallback((_, edge) => {
+    // 如果用户取消了连接，删除该边
+    setEdges((eds) => {
+      const updatedEdges = eds.filter((e) => e.id !== edge.id);
+      // 在取消连边后重新排版节点
+      setNodes((nds) => applyLayout(nds, updatedEdges, nodeSizeMap));
+      return updatedEdges;
+    });
+  }, [setEdges, setNodes]);
 
   // 提交逻辑
   const handleSubmit = async (e) => {
@@ -233,8 +258,11 @@ const DialogFlow = () => {
         edges={edges}
         onNodeClick={handleNodeClick}
         onNodesChange={onNodesChange}
+        onConnect={onConnect}
+        onEdgeUpdate={onEdgeUpdate}
+        onEdgeUpdateEnd={onEdgeUpdateEnd}
         nodeTypes={nodeTypes}
-        connectable={false}
+        connectable={true}
         fitView
         proOptions={{ hideAttribution: true }}
       >
