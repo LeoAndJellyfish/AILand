@@ -288,6 +288,11 @@ const DialogFlow = () => {
         <Controls />
         <MiniMap />
       </ReactFlow>
+      <div className="selection-hint" style={{ position: 'absolute', top: 0, left: 0, padding: '10px' }}>
+        {selectedParentId
+          ? `将在节点 "${selectedParentId}" 下添加分支`
+          : '未选择节点，将添加到最后节点'}
+      </div>
       <button className="settings-button" onClick={handleSettingsToggle}>
         设置
       </button>
@@ -345,11 +350,6 @@ const DialogFlow = () => {
         </div>
       )}
       <div className="input-container">
-        <div className="selection-hint">
-          {selectedParentId
-            ? `将在节点 "${selectedParentId}" 下添加分支`
-            : '未选择节点，将添加到最后节点'}
-        </div>
         <input
           value={input}
           onChange={e => setInput(e.target.value)}
