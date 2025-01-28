@@ -12,6 +12,9 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import './App.css';
 import ChatNode from './components/ChatNode';
+import InputContainer from './components/InputContainer';
+import SelectionHint from './components/SelectionHint';
+import SettingsPanel from './components/SettingsPanel';
 import { initialEdges, initialNodes } from './initialData';
 import { applyLayout } from './layoutUtils';
 
@@ -288,84 +291,29 @@ const DialogFlow = () => {
         <Controls />
         <MiniMap />
       </ReactFlow>
-      <div className="selection-hint" style={{ position: 'absolute', top: 0, left: 0, padding: '10px' }}>
-        {selectedParentId
-          ? `将在节点 "${selectedParentId}" 下添加分支`
-          : '未选择节点，将添加到最后节点'}
-      </div>
+      <SelectionHint selectedParentId={selectedParentId} />
       <button className="settings-button" onClick={handleSettingsToggle}>
         设置
       </button>
-      {showSettings && (
-        <div className="settings-panel">
-          <label>
-            Max Tokens:
-            <input
-              type="number"
-              value={maxTokens}
-              onChange={handleMaxTokensChange}
-              min="1"
-              max="1000"
-            />
-          </label>
-          <label>
-            使用模型:
-            <select value={selectedModel} onChange={handleModelChange}>
-              <option value="01AI">01AI</option>
-              <option value="deepseek">deepseek</option>
-              <option value="custom">自定义</option>
-            </select>
-          </label>
-          {selectedModel === 'custom' && (
-            <>
-              <label>
-                API Key:
-                <input
-                  type="text"
-                  value={customApiKey}
-                  onChange={handleApiKeyChange}
-                  placeholder="输入自定义 API Key"
-                />
-              </label>
-              <label>
-                URL:
-                <input
-                  type="text"
-                  value={customUrl}
-                  onChange={handleUrlChange}
-                  placeholder="输入自定义 URL"
-                />
-              </label>
-              <label>
-                模型名称:
-                <input
-                  type="text"
-                  value={customModelName}
-                  onChange={handleModelNameChange}
-                  placeholder="输入自定义模型名称"
-                />
-              </label>
-            </>
-          )}
-        </div>
-      )}
-      <div className="input-container">
-        <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          placeholder="输入问题..."
-          className="dialog-input"
-          disabled={loading}
-          onKeyDown={e => e.key === 'Enter' && handleSubmit(e)}
-        />
-        <button
-          onClick={handleSubmit}
-          className="dialog-button"
-          disabled={loading}
-        >
-          {loading ? '回复中...' : '发送'}
-        </button>
-      </div>
+      <SettingsPanel
+        showSettings={showSettings}
+        maxTokens={maxTokens}
+        handleMaxTokensChange={handleMaxTokensChange}
+        selectedModel={selectedModel}
+        handleModelChange={handleModelChange}
+        customApiKey={customApiKey}
+        handleApiKeyChange={handleApiKeyChange}
+        customUrl={customUrl}
+        handleUrlChange={handleUrlChange}
+        customModelName={customModelName}
+        handleModelNameChange={handleModelNameChange}
+      />
+      <InputContainer
+        input={input}
+        setInput={setInput}
+        handleSubmit={handleSubmit}
+        loading={loading}
+      />
     </div>
   );
 };
