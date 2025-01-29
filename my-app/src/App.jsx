@@ -202,7 +202,7 @@ const DialogFlow = () => {
     }
   
     const dialogHistory = extractDialogHistory(parentId);
-    console.log(dialogHistory);
+    //console.log(dialogHistory);
     const messages = dialogHistory.map(text => {
       const [role, content] = text.split(': ', 2);
       if (role === '系统') {
