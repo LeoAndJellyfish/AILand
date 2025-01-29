@@ -71,6 +71,21 @@
   cursor: not-allowed;
 }
 
+.upload-button {
+  padding: 12px 24px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-weight: bold;
+  transition: background var(--transition-duration);
+}
+
+.upload-button:hover {
+  background: var(--button-hover-color);
+}
+
 /* 选中节点的高亮边框样式 */
 .selected-node {
   border: 2px solid #007bff !important; /* 高亮边框颜色，使用 !important 来确保优先级 */
@@ -204,26 +219,6 @@
   bottom: -4px;
 }
 
-/* 用户节点特定样式 */
-.chat-node.user-node {
-  background-color: var(--primary-color);
-}
-
-/* AI节点特定样式 */
-.chat-node.ai-node {
-  background-color: var(--secondary-color);
-}
-
-/* 错误节点特定样式 */
-.chat-node.error-node {
-  background-color: var(--error-color);
-}
-
-/* 选中状态样式 */
-.chat-node.selected-node {
-  box-shadow: 0 0 0 2px #007bff;
-}
-
 .model-tag {
   position: absolute;
   bottom: 4px;
@@ -231,4 +226,20 @@
   font-size: 10px;
   color: #666;
   font-style: italic;
+}
+
+/* 文件节点样式 */
+.file-node {
+  background: var(--primary-color);
+}
+
+.file-node .react-flow__handle {
+  width: 8px;
+  height: 8px;
+  background-color: white;
+  border: 2px solid #555;
+}
+
+.file-node .react-flow__handle-bottom {
+  bottom: -4px;
 }

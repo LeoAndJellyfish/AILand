@@ -12,6 +12,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import './App.css';
 import ChatNode from './components/ChatNode';
+import FileNode from './components/FileNode';
 import InputContainer from './components/InputContainer';
 import SelectionHint from './components/SelectionHint';
 import SettingsPanel from './components/SettingsPanel';
@@ -20,6 +21,7 @@ import { applyLayout } from './layoutUtils';
 
 const nodeTypes = {
   chatNode: ChatNode,
+  fileNode: FileNode,
 };
 
 const DialogFlow = () => {
@@ -200,8 +202,12 @@ const DialogFlow = () => {
     }
   
     const dialogHistory = extractDialogHistory(parentId);
+    console.log(dialogHistory);
     const messages = dialogHistory.map(text => {
       const [role, content] = text.split(': ', 2);
+      if (role === '系统') {
+        return { role: 'system', content }; // 处理系统消息
+      }
       return { role: role === '你' ? 'user' : 'assistant', content };
     });
     messages.push({ role: 'user', content: input });
@@ -282,6 +288,30 @@ const DialogFlow = () => {
     className: `${node.className} ${node.id === selectedParentId ? 'selected-node' : ''}`,
   }));
 
+  // 处理文件上传
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const label = `系统: 以下是用户上传的文件内容。 ${file.name} ${e.target.result}`;
+      const newId = `file-${Date.now()}`;
+      const fileName = file.name;
+
+      const newNode = {
+        id: newId,
+        type: 'fileNode',
+        data: { label, fileName },
+        className: 'file-node',
+        position: { x: 250, y: 250 }, // 默认位置
+      };
+
+      setNodes((nds) => applyLayout([...nds, newNode], edges, nodeSizeMap));
+    };
+    reader.readAsText(file);
+  };
+
   return (
     <div className="dialog-container">
       <ReactFlow
@@ -323,6 +353,7 @@ const DialogFlow = () => {
         setInput={setInput}
         handleSubmit={handleSubmit}
         loading={loading}
+        handleFileUpload={handleFileUpload}
       />
     </div>
   );
