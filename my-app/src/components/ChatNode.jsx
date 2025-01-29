@@ -14,6 +14,11 @@ const ChatNode = memo(({ data }) => {
         <ReactMarkdown>{content}</ReactMarkdown>
       </div>
       <Handle type="source" position={Position.Bottom} />
+      {data.model && (
+        <div className="model-tag">
+          {data.model}
+        </div>
+      )}
     </div>
   );
 });

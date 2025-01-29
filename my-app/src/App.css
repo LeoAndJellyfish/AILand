@@ -148,6 +148,8 @@
   border-radius: 5px;
   min-width: 150px;
   max-width: 300px;
+  position: relative;
+  padding-bottom: 16px;
 }
 
 .node-content {
@@ -220,4 +222,13 @@
 /* 选中状态样式 */
 .chat-node.selected-node {
   box-shadow: 0 0 0 2px #007bff;
+}
+
+.model-tag {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  font-size: 10px;
+  color: #666;
+  font-style: italic;
 }

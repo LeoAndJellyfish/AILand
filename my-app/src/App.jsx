@@ -148,6 +148,13 @@ const DialogFlow = () => {
     const newId = Date.now().toString();
     const parentId = selectedParentId || nodes[nodes.length - 1].id;
 
+    // 获取当前使用的模型名称
+    const modelDisplay = selectedModel === '01AI' 
+      ? 'Yi-Lightning'
+      : selectedModel === 'deepseek' 
+        ? 'Deepseek-Chat'
+        : customModelName;
+
     const newNodes = [
       ...nodes,
       {
@@ -159,7 +166,10 @@ const DialogFlow = () => {
       {
         id: `ai-${newId}`,
         type: 'chatNode',
-        data: { label: 'AI: 思考中...' },
+        data: { 
+          label: 'AI: 思考中...',
+          model: modelDisplay 
+        },
         className: 'ai-node',
       },
     ];
@@ -234,19 +244,19 @@ const DialogFlow = () => {
       const reply = data.choices[0]?.message?.content || 'AI: 请求失败，请重试';
 
       setNodes(prevNodes => {
-        // 过滤掉旧的 AI 节点
         const filteredNodes = prevNodes.filter(n => n.id !== `ai-${newId}`);
         
-        // 添加新的 AI 节点
         const newNode = {
           id: `ai-${newId}`,
           type: 'chatNode',
-          data: { label: `AI: ${reply}` },
+          data: { 
+            label: `AI: ${reply}`,
+            model: modelDisplay  // 添加模型信息
+          },
           className: 'ai-node',
-          position: { x: 0, y: 0 }, // 位置将通过 applyLayout 更新
+          position: { x: 0, y: 0 },
         };
       
-        // 返回更新后的节点数组
         return applyLayout([...filteredNodes, newNode], newEdges, nodeSizeMap);
       });
     } catch {
