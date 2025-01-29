@@ -29,7 +29,7 @@ const InputContainer = ({ input, setInput, handleSubmit, loading, handleFileUplo
         </button>
         <input
           type="file"
-          accept=".txt,.md,.docx"
+          accept=".txt,.md"
           onChange={handleFileUpload}
           ref={fileInputRef}
           style={{ display: 'none' }}
