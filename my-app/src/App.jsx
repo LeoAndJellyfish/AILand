@@ -217,13 +217,11 @@ const DialogFlow = () => {
       ? {
           url: 'https://api.lingyiwanwu.com/v1/chat/completions',
           model: 'yi-lightning',
-          apiKey: 'a0fbf48ae1a040c0bcca6cc88b328c53',
         }
       : selectedModel === 'deepseek'
       ? {
           url: 'https://api.deepseek.com/chat/completions',
           model: 'deepseek-chat',
-          apiKey: 'sk-a4ad50ad0771424db5ef16c46f941dbf',
         }
       : {
           url: customUrl,
@@ -232,39 +230,76 @@ const DialogFlow = () => {
         };
 
     try {
-      const response = await fetch(apiConfig.url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiConfig.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: apiConfig.model,
-          messages,
-          temperature: 0.3,
-          max_tokens: maxTokens,
-        }),
-      });
-
-      const data = await response.json();
-      const reply = data.choices[0]?.message?.content || 'AI: 请求失败，请重试';
-
-      setNodes(prevNodes => {
-        const filteredNodes = prevNodes.filter(n => n.id !== `ai-${newId}`);
-        
-        const newNode = {
-          id: `ai-${newId}`,
-          type: 'chatNode',
-          data: { 
-            label: `AI: ${reply}`,
-            model: modelDisplay  // 添加模型信息
+      if (selectedModel === 'custom') {
+        // 自定义模式下直接在前端发起请求
+        const response = await fetch(apiConfig.url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiConfig.apiKey}`,
           },
-          className: 'ai-node',
-          position: { x: 0, y: 0 },
-        };
-      
-        return applyLayout([...filteredNodes, newNode], newEdges, nodeSizeMap);
-      });
+          body: JSON.stringify({
+            model: apiConfig.model,
+            messages,
+            temperature: 0.3,
+            max_tokens: maxTokens,
+          }),
+        });
+
+        const data = await response.json();
+        const reply = data.choices[0]?.message?.content || 'AI: 请求失败，请重试';
+
+        setNodes(prevNodes => {
+          const filteredNodes = prevNodes.filter(n => n.id !== `ai-${newId}`);
+          
+          const newNode = {
+            id: `ai-${newId}`,
+            type: 'chatNode',
+            data: { 
+              label: `AI: ${reply}`,
+              model: modelDisplay  // 添加模型信息
+            },
+            className: 'ai-node',
+            position: { x: 0, y: 0 },
+          };
+        
+          return applyLayout([...filteredNodes, newNode], newEdges, nodeSizeMap);
+        });
+      } else {
+        // 默认模式下请求后端
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messages,
+            model: apiConfig.model,
+            url: apiConfig.url,
+            maxTokens,
+          }),
+        });
+
+        const data = await response.json();
+        const reply = data.response || 'AI: 请求失败，请重试';
+
+        setNodes(prevNodes => {
+          const filteredNodes = prevNodes.filter(n => n.id !== `ai-${newId}`);
+          
+          const newNode = {
+            id: `ai-${newId}`,
+            type: 'chatNode',
+            data: { 
+              label: `AI: ${reply}`,
+              model: modelDisplay  // 添加模型信息
+            },
+            className: 'ai-node',
+            position: { x: 0, y: 0 },
+          };
+        
+          return applyLayout([...filteredNodes, newNode], newEdges, nodeSizeMap);
+        });
+      }
     } catch {
       setNodes(nodes =>
         nodes.map(n =>

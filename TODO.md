@@ -7,7 +7,8 @@
 - [x] markdown显示
 - [x] 文件节点
 - [x] AI节点右下角注明AI来源
-- [ ] 隐藏APIKEY
+- [x] 隐藏APIKEY
 - [ ] 文件节点支持上传pdf和docx文件
 - [ ] 文件节点美化
 - [ ] 解决文件烧token问题
+- [x] 在服务器环境中设置 `API_KEY` 环境变量
