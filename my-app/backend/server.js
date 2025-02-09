@@ -52,10 +52,10 @@ app.post("/api/openai", async (req, res) => {
 
 // 路由：处理来自前端的对话请求
 app.post("/api/chat", async (req, res) => {
-  const { messages, model, url, maxTokens } = req.body;
-
-  // 从环境变量中获取 API 密钥
-  const apiKey = process.env[`${model.toUpperCase()}_API_KEY`];
+  const { messages, model, url, maxTokens, envKey } = req.body;
+  
+  // 从环境变量获取密钥
+  const apiKey = process.env[envKey];
 
   try {
     const response = await axios.post(
@@ -73,13 +73,12 @@ app.post("/api/chat", async (req, res) => {
         },
       }
     );
-
     res.json({
       response: response.data.choices[0]?.message?.content || 'AI: 请求失败，请重试',
     });
   } catch (error) {
     console.error("API request failed:", error);
-    res.status(500).json({ error: "Failed to fetch AI response" });
+    res.status(500).json({ error: `Failed to fetch AI response` });
   }
 });
 

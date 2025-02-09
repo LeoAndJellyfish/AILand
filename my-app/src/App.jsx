@@ -16,6 +16,7 @@ import FileNode from './components/FileNode';
 import InputContainer from './components/InputContainer';
 import SelectionHint from './components/SelectionHint';
 import SettingsPanel from './components/SettingsPanel';
+import { defaultModel, modelConfigs } from './config/modelConfig';
 import { initialEdges, initialNodes } from './initialData';
 import { applyLayout } from './layoutUtils';
 
@@ -34,10 +35,12 @@ const DialogFlow = () => {
   const { setCenter } = useReactFlow(); // 获取视图控制方法
   const [showSettings, setShowSettings] = useState(false);
   const [maxTokens, setMaxTokens] = useState(1024);
-  const [selectedModel, setSelectedModel] = useState('01AI'); // 新增状态用于选择模型
-  const [customApiKey, setCustomApiKey] = useState(''); // 新增状态用于自定义 API 密钥
-  const [customUrl, setCustomUrl] = useState(''); // 新增状态用于自定义 URL
-  const [customModelName, setCustomModelName] = useState(''); // 新增状态用于自定义模型名称
+  const [selectedModel, setSelectedModel] = useState(defaultModel);
+  const [customConfig, setCustomConfig] = useState({
+    apiKey: '',
+    url: '',
+    modelName: ''
+  });
 
   const onNodesChange = useCallback((changes) => {
     changes.forEach(change => {
@@ -106,15 +109,15 @@ const DialogFlow = () => {
   };
 
   const handleApiKeyChange = (e) => {
-    setCustomApiKey(e.target.value);
+    setCustomConfig(prev => ({ ...prev, apiKey: e.target.value }));
   };
 
   const handleUrlChange = (e) => {
-    setCustomUrl(e.target.value);
+    setCustomConfig(prev => ({ ...prev, url: e.target.value }));
   };
 
   const handleModelNameChange = (e) => {
-    setCustomModelName(e.target.value);
+    setCustomConfig(prev => ({ ...prev, modelName: e.target.value }));
   };
 
   // 处理连接的函数
@@ -141,6 +144,21 @@ const DialogFlow = () => {
     });
   }, [setEdges, setNodes]);
 
+  // 新增的API配置逻辑
+  const getApiConfig = useCallback(() => {
+    const selected = modelConfigs.find(m => m.id === selectedModel) || {};
+    return {
+      url: selected.apiUrl || customConfig.url,
+      model: selected.modelName || customConfig.modelName,
+      envKey: selected.envKey,
+      isCustom: !selected.apiUrl
+    };
+  }, [selectedModel, customConfig]);
+
+  // 修改提交逻辑中的API配置部分
+  const apiConfig = getApiConfig();
+  const modelDisplay = modelConfigs.find(m => m.id === selectedModel)?.name || customConfig.modelName;
+
   // 提交逻辑
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -149,13 +167,6 @@ const DialogFlow = () => {
     setLoading(true);
     const newId = Date.now().toString();
     const parentId = selectedParentId || nodes[nodes.length - 1].id;
-
-    // 获取当前使用的模型名称
-    const modelDisplay = selectedModel === '01AI' 
-      ? 'Yi-Lightning'
-      : selectedModel === 'deepseek' 
-        ? 'Deepseek-Chat'
-        : customModelName;
 
     const newNodes = [
       ...nodes,
@@ -212,25 +223,8 @@ const DialogFlow = () => {
     });
     messages.push({ role: 'user', content: input });
 
-    // 根据选择的模型设置 API 配置
-    const apiConfig = selectedModel === '01AI'
-      ? {
-          url: 'https://api.lingyiwanwu.com/v1/chat/completions',
-          model: 'yi-lightning',
-        }
-      : selectedModel === 'deepseek'
-      ? {
-          url: 'https://api.deepseek.com/chat/completions',
-          model: 'deepseek-chat',
-        }
-      : {
-          url: customUrl,
-          model: customModelName,
-          apiKey: customApiKey,
-        };
-
     try {
-      if (selectedModel === 'custom') {
+      if (apiConfig.isCustom) {
         // 自定义模式下直接在前端发起请求
         const response = await fetch(apiConfig.url, {
           method: 'POST',
@@ -276,6 +270,7 @@ const DialogFlow = () => {
             messages,
             model: apiConfig.model,
             url: apiConfig.url,
+            envKey: apiConfig.envKey,
             maxTokens,
           }),
         });
@@ -347,6 +342,11 @@ const DialogFlow = () => {
     reader.readAsText(file);
   };
 
+  // 修改自定义配置处理
+  const handleCustomConfigChange = useCallback((field, value) => {
+    setCustomConfig(prev => ({ ...prev, [field]: value }));
+  }, []);
+
   return (
     <div className="dialog-container">
       <ReactFlow
@@ -376,12 +376,8 @@ const DialogFlow = () => {
         handleMaxTokensChange={handleMaxTokensChange}
         selectedModel={selectedModel}
         handleModelChange={handleModelChange}
-        customApiKey={customApiKey}
-        handleApiKeyChange={handleApiKeyChange}
-        customUrl={customUrl}
-        handleUrlChange={handleUrlChange}
-        customModelName={customModelName}
-        handleModelNameChange={handleModelNameChange}
+        customConfig={customConfig}
+        onCustomChange={handleCustomConfigChange}
       />
       <InputContainer
         input={input}

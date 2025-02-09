@@ -1,4 +1,5 @@
 import React from 'react';
+import { modelConfigs } from '../config/modelConfig';
 
 const SettingsPanel = ({
   showSettings,
@@ -6,12 +7,8 @@ const SettingsPanel = ({
   handleMaxTokensChange,
   selectedModel,
   handleModelChange,
-  customApiKey,
-  handleApiKeyChange,
-  customUrl,
-  handleUrlChange,
-  customModelName,
-  handleModelNameChange,
+  customConfig,
+  onCustomChange,
 }) => {
   if (!showSettings) return null;
 
@@ -30,8 +27,11 @@ const SettingsPanel = ({
       <label>
         使用模型:
         <select value={selectedModel} onChange={handleModelChange}>
-          <option value="01AI">01AI</option>
-          <option value="deepseek">deepseek</option>
+          {modelConfigs.map(model => (
+            <option key={model.id} value={model.id}>
+              {model.name}
+            </option>
+          ))}
           <option value="custom">自定义</option>
         </select>
       </label>
@@ -41,8 +41,8 @@ const SettingsPanel = ({
             API Key:
             <input
               type="text"
-              value={customApiKey}
-              onChange={handleApiKeyChange}
+              value={customConfig.apiKey}
+              onChange={(e) => onCustomChange('apiKey', e.target.value)}
               placeholder="输入自定义 API Key"
             />
           </label>
@@ -50,8 +50,8 @@ const SettingsPanel = ({
             URL:
             <input
               type="text"
-              value={customUrl}
-              onChange={handleUrlChange}
+              value={customConfig.url}
+              onChange={(e) => onCustomChange('url', e.target.value)}
               placeholder="输入自定义 URL"
             />
           </label>
@@ -59,8 +59,8 @@ const SettingsPanel = ({
             模型名称:
             <input
               type="text"
-              value={customModelName}
-              onChange={handleModelNameChange}
+              value={customConfig.modelName}
+              onChange={(e) => onCustomChange('modelName', e.target.value)}
               placeholder="输入自定义模型名称"
             />
           </label>
