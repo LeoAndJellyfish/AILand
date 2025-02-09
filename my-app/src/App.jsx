@@ -240,6 +240,12 @@ const DialogFlow = () => {
           }),
         });
 
+        // 添加响应状态检查
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error?.message || 'API请求失败');
+        }
+
         const data = await response.json();
         const reply = data.choices[0]?.message?.content || 'AI: 请求失败，请重试';
 
@@ -274,6 +280,12 @@ const DialogFlow = () => {
             maxTokens,
           }),
         });
+
+        // 添加响应状态检查
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || '后端请求失败');
+        }
 
         const data = await response.json();
         const reply = data.response || 'AI: 请求失败，请重试';
