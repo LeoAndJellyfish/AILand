@@ -1,6 +1,6 @@
-import dagre from 'dagre';
 import React, { useCallback, useRef, useState } from 'react';
 import ReactFlow, {
+  addEdge,
   Background,
   Controls,
   MiniMap,
@@ -11,55 +11,18 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import './App.css';
+import ChatNode from './components/ChatNode';
+import FileNode from './components/FileNode';
+import InputContainer from './components/InputContainer';
+import SelectionHint from './components/SelectionHint';
+import SettingsPanel from './components/SettingsPanel';
+import { defaultModel, modelConfigs } from './config/modelConfig';
+import { initialEdges, initialNodes } from './initialData';
+import { applyLayout } from './layoutUtils';
 
-// 初始节点和边
-const initialNodes = [
-  {
-    id: '1',
-    data: { label: '你: 你好' },
-    className: 'user-node',
-    position: { x: 0, y: 0 },
-  },
-  {
-    id: '2',
-    data: { label: 'AI: 你好！请问我可以帮您什么？' },
-    className: 'ai-node',
-    position: { x: 0, y: 100 },
-  },
-];
-
-const initialEdges = [{ id: 'e1-2', source: '1', target: '2' }];
-
-// 创建布局算法函数
-const applyLayout = (nodes, edges, nodeSizeMap) => {
-  const dagreGraph = new dagre.graphlib.Graph();
-  dagreGraph.setDefaultEdgeLabel(() => ({}));
-  dagreGraph.setGraph({ rankdir: 'TB', nodesep: 200, ranksep: 50 });
-
-  nodes.forEach(node => {
-    // 使用存储的尺寸或默认尺寸
-    const size = nodeSizeMap.current[node.id] || { width: 200, height: 80 };
-    dagreGraph.setNode(node.id, { width: size.width, height: size.height });
-  });
-
-  edges.forEach(edge => {
-    dagreGraph.setEdge(edge.source, edge.target);
-  });
-
-  dagre.layout(dagreGraph);
-  
-  return nodes.map(node => {
-    const nodeWithPosition = dagreGraph.node(node.id);
-    return {
-      ...node,
-      position: {
-        x: nodeWithPosition.x - (nodeSizeMap.current[node.id]?.width || 200) / 2,
-        y: nodeWithPosition.y - (nodeSizeMap.current[node.id]?.height || 80) / 2,
-      },
-      targetPosition: 'top',
-      sourcePosition: 'bottom',
-    };
-  });
+const nodeTypes = {
+  chatNode: ChatNode,
+  fileNode: FileNode,
 };
 
 const DialogFlow = () => {
@@ -70,6 +33,14 @@ const DialogFlow = () => {
   const [loading, setLoading] = useState(false);
   const [selectedParentId, setSelectedParentId] = useState(null);
   const { setCenter } = useReactFlow(); // 获取视图控制方法
+  const [showSettings, setShowSettings] = useState(false);
+  const [maxTokens, setMaxTokens] = useState(1024);
+  const [selectedModel, setSelectedModel] = useState(defaultModel);
+  const [customConfig, setCustomConfig] = useState({
+    apiKey: '',
+    url: '',
+    modelName: ''
+  });
 
   const onNodesChange = useCallback((changes) => {
     changes.forEach(change => {
@@ -85,20 +56,38 @@ const DialogFlow = () => {
     //console.log(nodeSizeMap.current);
   }, []);
 
-  // 提取从根节点到选中节点的对话历史
+  // 修改 extractDialogHistory 函数
   const extractDialogHistory = useCallback((parentId) => {
     const history = [];
-    let currentId = parentId;
-    while (currentId) {
-      const node = nodes.find(n => n.id === currentId);
-      if (node) {
-        history.unshift(node.data.label);
-        const edge = edges.find(e => e.target === currentId);
-        currentId = edge ? edge.source : null;
-      } else {
-        currentId = null;
+    const visited = new Set(); // 用于防止循环引用
+    
+    // 递归获取所有父节点的对话
+    const getAllPaths = (nodeId) => {
+      if (visited.has(nodeId)) return;
+      visited.add(nodeId);
+      
+      const node = nodes.find(n => n.id === nodeId);
+      if (!node) return;
+      
+      // 获取所有指向当前节点的边
+      const parentEdges = edges.filter(e => e.target === nodeId);
+      
+      // 如果没有父节点，将当前节点添加到历史记录
+      if (parentEdges.length === 0) {
+        history.push(node.data.label);
+        return;
       }
-    }
+      
+      // 对于每个父节点，递归获取其历史记录
+      parentEdges.forEach(edge => {
+        getAllPaths(edge.source);
+      });
+      
+      // 将当前节点添加到历史记录
+      history.push(node.data.label);
+    };
+    
+    getAllPaths(parentId);
     return history;
   }, [nodes, edges]);
 
@@ -106,6 +95,69 @@ const DialogFlow = () => {
   const handleNodeClick = useCallback((_, node) => {
     setSelectedParentId(prev => (prev === node.id ? null : node.id));
   }, []);
+
+  const handleSettingsToggle = () => {
+    setShowSettings(prev => !prev);
+  };
+
+  const handleMaxTokensChange = (e) => {
+    setMaxTokens(Number(e.target.value));
+  };
+
+  const handleModelChange = (e) => {
+    setSelectedModel(e.target.value);
+  };
+
+  const handleApiKeyChange = (e) => {
+    setCustomConfig(prev => ({ ...prev, apiKey: e.target.value }));
+  };
+
+  const handleUrlChange = (e) => {
+    setCustomConfig(prev => ({ ...prev, url: e.target.value }));
+  };
+
+  const handleModelNameChange = (e) => {
+    setCustomConfig(prev => ({ ...prev, modelName: e.target.value }));
+  };
+
+  // 处理连接的函数
+  const onConnect = useCallback((params) => {
+    setEdges((eds) => {
+      const newEdges = addEdge(params, eds);
+      // 在连边后重新排版节点
+      setNodes((nds) => applyLayout(nds, newEdges, nodeSizeMap));
+      return newEdges;
+    });
+  }, [setEdges, setNodes]);
+
+  const onEdgeUpdate = useCallback((oldEdge, newConnection) => {
+    setEdges((eds) => addEdge(newConnection, eds.filter((e) => e.id !== oldEdge.id)));
+  }, [setEdges]);
+
+  const onEdgeUpdateEnd = useCallback((_, edge) => {
+    // 如果用户取消了连接，删除该边
+    setEdges((eds) => {
+      const updatedEdges = eds.filter((e) => e.id !== edge.id);
+      // 在取消连边后重新排版节点
+      setNodes((nds) => applyLayout(nds, updatedEdges, nodeSizeMap));
+      return updatedEdges;
+    });
+  }, [setEdges, setNodes]);
+
+  // 新增的API配置逻辑
+  const getApiConfig = useCallback(() => {
+    const selected = modelConfigs.find(m => m.id === selectedModel) || {};
+    return {
+      url: selected.apiUrl || customConfig.url,
+      model: selected.modelName || customConfig.modelName,
+      envKey: selected.envKey,
+      isCustom: !selected.apiUrl
+    };
+  }, [selectedModel, customConfig]);
+
+  // 修改提交逻辑中的API配置部分
+  const apiConfig = getApiConfig();
+  const modelDisplay = modelConfigs.find(m => m.id === selectedModel)?.name || customConfig.modelName;
 
   // 提交逻辑
   const handleSubmit = async (e) => {
@@ -120,12 +172,17 @@ const DialogFlow = () => {
       ...nodes,
       {
         id: `u-${newId}`,
+        type: 'chatNode',
         data: { label: `你: ${input}` },
         className: 'user-node',
       },
       {
         id: `ai-${newId}`,
-        data: { label: 'AI: 思考中...' },
+        type: 'chatNode',
+        data: { 
+          label: 'AI: 思考中...',
+          model: modelDisplay 
+        },
         className: 'ai-node',
       },
     ];
@@ -156,45 +213,100 @@ const DialogFlow = () => {
     }
   
     const dialogHistory = extractDialogHistory(parentId);
+    //console.log(dialogHistory);
     const messages = dialogHistory.map(text => {
       const [role, content] = text.split(': ', 2);
+      if (role === '系统') {
+        return { role: 'system', content }; // 处理系统消息
+      }
       return { role: role === '你' ? 'user' : 'assistant', content };
     });
     messages.push({ role: 'user', content: input });
 
     try {
-      const response = await fetch('https://api.lingyiwanwu.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer a0fbf48ae1a040c0bcca6cc88b328c53`,
-        },
-        body: JSON.stringify({
-          model: 'yi-lightning',
-          messages,
-          temperature: 0.3,
-          max_tokens: 100,
-        }),
-      });
+      if (apiConfig.isCustom) {
+        // 自定义模式下直接在前端发起请求
+        const response = await fetch(apiConfig.url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiConfig.apiKey}`,
+          },
+          body: JSON.stringify({
+            model: apiConfig.model,
+            messages,
+            temperature: 0.3,
+            max_tokens: maxTokens,
+          }),
+        });
 
-      const data = await response.json();
-      const reply = data.choices[0]?.message?.content || 'AI: 请求失败，请重试';
+        // 添加响应状态检查
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error?.message || 'API请求失败');
+        }
 
-      setNodes(prevNodes => {
-        // 过滤掉旧的 AI 节点
-        const filteredNodes = prevNodes.filter(n => n.id !== `ai-${newId}`);
+        const data = await response.json();
+        const reply = data.choices[0]?.message?.content || 'AI: 请求失败，请重试';
+
+        setNodes(prevNodes => {
+          const filteredNodes = prevNodes.filter(n => n.id !== `ai-${newId}`);
+          
+          const newNode = {
+            id: `ai-${newId}`,
+            type: 'chatNode',
+            data: { 
+              label: `AI: ${reply}`,
+              model: modelDisplay  // 添加模型信息
+            },
+            className: 'ai-node',
+            position: { x: 0, y: 0 },
+          };
         
-        // 添加新的 AI 节点
-        const newNode = {
-          id: `ai-${newId}`,
-          data: { label: `AI: ${reply}` },
-          className: 'ai-node',
-          position: { x: 0, y: 0 }, // 位置将通过 applyLayout 更新
-        };
-      
-        // 返回更新后的节点数组
-        return applyLayout([...filteredNodes, newNode], newEdges, nodeSizeMap);
-      });
+          return applyLayout([...filteredNodes, newNode], newEdges, nodeSizeMap);
+        });
+      } else {
+        // 默认模式下请求后端
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messages,
+            model: apiConfig.model,
+            url: apiConfig.url,
+            envKey: apiConfig.envKey,
+            maxTokens,
+          }),
+        });
+
+        // 添加响应状态检查
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || '后端请求失败');
+        }
+
+        const data = await response.json();
+        const reply = data.response || 'AI: 请求失败，请重试';
+
+        setNodes(prevNodes => {
+          const filteredNodes = prevNodes.filter(n => n.id !== `ai-${newId}`);
+          
+          const newNode = {
+            id: `ai-${newId}`,
+            type: 'chatNode',
+            data: { 
+              label: `AI: ${reply}`,
+              model: modelDisplay  // 添加模型信息
+            },
+            className: 'ai-node',
+            position: { x: 0, y: 0 },
+          };
+        
+          return applyLayout([...filteredNodes, newNode], newEdges, nodeSizeMap);
+        });
+      }
     } catch {
       setNodes(nodes =>
         nodes.map(n =>
@@ -218,6 +330,35 @@ const DialogFlow = () => {
     className: `${node.className} ${node.id === selectedParentId ? 'selected-node' : ''}`,
   }));
 
+  // 处理文件上传
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const label = `系统: 以下是用户上传的文件内容。 ${file.name} ${e.target.result}`;
+      const newId = `file-${Date.now()}`;
+      const fileName = file.name;
+
+      const newNode = {
+        id: newId,
+        type: 'fileNode',
+        data: { label, fileName },
+        className: 'file-node',
+        position: { x: 250, y: 250 }, // 默认位置
+      };
+
+      setNodes((nds) => applyLayout([...nds, newNode], edges, nodeSizeMap));
+    };
+    reader.readAsText(file);
+  };
+
+  // 修改自定义配置处理
+  const handleCustomConfigChange = useCallback((field, value) => {
+    setCustomConfig(prev => ({ ...prev, [field]: value }));
+  }, []);
+
   return (
     <div className="dialog-container">
       <ReactFlow
@@ -225,7 +366,11 @@ const DialogFlow = () => {
         edges={edges}
         onNodeClick={handleNodeClick}
         onNodesChange={onNodesChange}
-        connectable={false}
+        onConnect={onConnect}
+        onEdgeUpdate={onEdgeUpdate}
+        onEdgeUpdateEnd={onEdgeUpdateEnd}
+        nodeTypes={nodeTypes}
+        connectable={true}
         fitView
         proOptions={{ hideAttribution: true }}
       >
@@ -233,29 +378,26 @@ const DialogFlow = () => {
         <Controls />
         <MiniMap />
       </ReactFlow>
-
-      <div className="input-container">
-        <div className="selection-hint">
-          {selectedParentId
-            ? `将在节点 "${selectedParentId}" 下添加分支`
-            : '未选择节点，将添加到最后节点'}
-        </div>
-        <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          placeholder="输入问题..."
-          className="dialog-input"
-          disabled={loading}
-          onKeyDown={e => e.key === 'Enter' && handleSubmit(e)}
-        />
-        <button
-          onClick={handleSubmit}
-          className="dialog-button"
-          disabled={loading}
-        >
-          {loading ? '回复中...' : '发送'}
-        </button>
-      </div>
+      <SelectionHint selectedParentId={selectedParentId} />
+      <button className="settings-button" onClick={handleSettingsToggle}>
+        设置
+      </button>
+      <SettingsPanel
+        showSettings={showSettings}
+        maxTokens={maxTokens}
+        handleMaxTokensChange={handleMaxTokensChange}
+        selectedModel={selectedModel}
+        handleModelChange={handleModelChange}
+        customConfig={customConfig}
+        onCustomChange={handleCustomConfigChange}
+      />
+      <InputContainer
+        input={input}
+        setInput={setInput}
+        handleSubmit={handleSubmit}
+        loading={loading}
+        handleFileUpload={handleFileUpload}
+      />
     </div>
   );
 };
