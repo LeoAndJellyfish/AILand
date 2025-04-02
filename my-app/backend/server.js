@@ -14,6 +14,7 @@ app.use(cors());
 app.use(express.json());
 
 // 路由：调用 01-AI API
+// 用于词典应用
 app.post("/api/openai", async (req, res) => {
   const { prompt } = req.body;
   apiKey = process.env.OPENAI_API_KEY; // 从 .env 文件加载 API 密钥
@@ -51,6 +52,7 @@ app.post("/api/openai", async (req, res) => {
 
 
 // 路由：处理来自前端的对话请求
+// 用于AIland应用
 app.post("/api/chat", async (req, res) => {
   const { messages, model, url, maxTokens, envKey } = req.body;
   
