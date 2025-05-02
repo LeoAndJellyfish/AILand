@@ -15,6 +15,14 @@ export const modelConfigs = [
     requireKey: true,
     envKey: 'OPENROUTER_API_KEY'
   },
+  {
+    id: 'qwen3-235b-a22b',
+    name: 'qwen3-235b-a22b',
+    apiUrl: 'https://openrouter.ai/api/v1/chat/completions',
+    modelName: 'qwen/qwen3-235b-a22b:free',
+    requireKey: true,
+    envKey: 'OPENROUTER_API_KEY'
+  },
   // 可在此添加更多预配置模型
 ];
 
